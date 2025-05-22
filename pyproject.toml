@@ -11,6 +11,8 @@ dependencies = [
     "httpx>=0.25.0",
     "python-dotenv>=1.0.0",
     "loguru>=0.7.0",
+    # Aurelian itself isn't on PyPI yet, so you'll need to install it separately:
+    # pip install git+https://github.com/monarch-initiative/aurelian.git
 ]
 
 [dependency-groups]
@@ -30,3 +32,6 @@ packages = ["src/fast_aurelian"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.scripts]
+fast-aurelian = "fast_aurelian.main:app"
