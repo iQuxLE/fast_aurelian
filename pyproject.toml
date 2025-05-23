@@ -2,7 +2,10 @@
 name = "fast-aurelian"
 version = "0.1.0"
 description = "FastAPI-based service that exposes Aurelian agents and tools through a REST API"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
+packages = [
+  { include = "fast_aurelian", from = "src" }
+]
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
@@ -11,23 +14,109 @@ dependencies = [
     "httpx>=0.25.0",
     "python-dotenv>=1.0.0",
     "loguru>=0.7.0",
-    # Aurelian itself isn't on PyPI yet, so you'll need to install it separately:
-    # pip install git+https://github.com/monarch-initiative/aurelian.git
+    "aurelian @ git+https://github.com/iQuxle/aurelian.git@poetry-uv-compatible-toml",
+
 ]
+
+[tool.poetry.dependencies]
+wrapt = ">=1.14.0"
+deprecated = ">=1.2.13"
 
 [dependency-groups]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
+    "ruff>=0.1.0",
     "mypy>=1.7.0",
+    "httpx>=0.25.0",
+    "pre-commit>=3.5.0",
+]
+
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
     "httpx>=0.25.0",
 ]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/fast_aurelian"]
+
+# Tool configurations
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+lint.select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+]
+lint.ignore = [
+    "E501",  # line too long, handled by formatter
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+
+# Per-module options
+[[tool.mypy.overrides]]
+module = [
+    "paper_qa.*",
+    "pydantic_ai.*",
+    "loguru",
+]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["src/fast_aurelian"]
+omit = [
+    "tests/*",
+    "src/fast_aurelian/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+]
+
+[tool.uv.sources]
+aurelian = { path = "../forks/aurelian" }
 
 [build-system]
 requires = ["hatchling"]
