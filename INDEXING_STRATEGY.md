@@ -136,9 +136,33 @@ POST /api/paperqa/query → Searches unified index
 - ❌ Directory consistency still broken
 - ❌ `list_papers` still returns 0 despite successful indexing
 
+### Failing Integration Test
+
+The integration test `test_paperqa_workflow` demonstrates the indexing problem:
+
+```
+Initial papers: 0
+Add result: paper_directory='Attention Is All You Need', indexed_papers=['1706.03762.pdf']
+Index result: paper_directory='../tests/papers', indexed_papers=['curate_gpt.pdf'] 
+After adding: 0 papers  # ❌ Should be 1
+
+# Logs show the problem:
+- add_paper: "Building index for 1 documents in Attention Is All You Need"
+- index_papers: "Building index for 1 documents in ../tests/papers"  
+- list_papers: "No index found or index is empty"
+```
+
+**Root Cause**: Each operation uses different directories:
+- `add_paper` creates `"Attention Is All You Need/"` directory 
+- `index_papers` uses `"../tests/papers"` directory
+- `list_papers` looks in yet another location
+
+**Result**: Multiple isolated `.pqa` indexes that don't communicate.
+
 ## Next Steps
 
-1. Implement Phase 1 changes for directory consistency
-2. Test with integration test to verify all operations work together
-3. Add proper error handling and user feedback
-4. Document the unified approach in API docs
+1. **URGENT**: Implement Phase 1 changes for directory consistency
+2. Fix the failing integration test as validation
+3. Test with integration test to verify all operations work together
+4. Add proper error handling and user feedback
+5. Document the unified approach in API docs
