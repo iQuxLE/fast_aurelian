@@ -34,8 +34,6 @@ class PaperQAService:
         
         self.config_deps: PaperQADependencies = get_config()
         self.config_deps.paper_directory = str(self.default_paper_directory)
-        # Set workdir to the paper directory itself so .pqa index folder is created there
-        self.config_deps.workdir.location = str(self.default_paper_directory)
         logger.info(f"Aurelian PaperQA config: {self.config_deps}")
         self.ctx = RunContext(deps=self.config_deps, model=None, usage=None, prompt=None)
 
@@ -45,12 +43,8 @@ class PaperQAService:
             target_dir = Path(paper_directory)
             target_dir.mkdir(exist_ok=True)
             self.config_deps.paper_directory = str(target_dir)
-            # Set workdir to the paper directory so .pqa index is created there
-            self.config_deps.workdir.location = str(target_dir)
         else:
             self.config_deps.paper_directory = str(self.default_paper_directory)
-            # Reset workdir to default paper directory
-            self.config_deps.workdir.location = str(self.default_paper_directory)
 
     async def query_papers(self, query: str, paper_directory: str | None = None, **kwargs):
         """Query indexed papers to answer a question."""

@@ -35,9 +35,34 @@ except ImportError:
 from .api.routes import register_routes
 
 
+def setup_paperqa_environment(settings):
+    """Setup PaperQA environment variables at app startup."""
+    from pathlib import Path
+    
+    # Set default paper directory if not already set
+    if not os.environ.get("PQA_HOME"):
+        default_paper_dir = Path.cwd() / "papers"
+        default_paper_dir.mkdir(exist_ok=True)
+        os.environ["PQA_HOME"] = str(default_paper_dir)
+        logger.info(f"Set PQA_HOME to: {default_paper_dir}")
+    
+    # Set Aurelian workdir if specified in settings
+    if hasattr(settings, 'aurelian_workdir') and settings.aurelian_workdir:
+        workdir_path = Path(settings.aurelian_workdir)
+        workdir_path.mkdir(exist_ok=True)
+        os.environ["AURELIAN_WORKDIR"] = str(workdir_path)
+        # Also set PQA_HOME to the same location
+        os.environ["PQA_HOME"] = str(workdir_path)
+        logger.info(f"Set AURELIAN_WORKDIR and PQA_HOME to: {workdir_path}")
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     settings = get_settings()
+    
+    # Setup PaperQA environment at startup
+    setup_paperqa_environment(settings)
+    
     logger.remove()
     logger.add(
         sys.stderr, format=settings.log_format, level=settings.log_level.upper(), colorize=True
