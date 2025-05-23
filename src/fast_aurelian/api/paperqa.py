@@ -46,9 +46,15 @@ class AgentQuery(BaseModel):
     max_papers: int | None = Field(10, description="Maximum papers to consider")
 
 
+from functools import lru_cache
+
+@lru_cache()
 def get_paperqa_service():
     """
     Dependency that provides a PaperQA service instance.
+    
+    Uses lru_cache to ensure the same service instance is reused,
+    maintaining the index state across requests.
 
     Returns:
         Configured PaperQA service
