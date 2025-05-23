@@ -88,7 +88,7 @@ async def search_papers(
     and returns the most relevant results.
     """
     try:
-        result = await service.search_papers(search.query, search.max_papers)
+        result = await service.search_papers(search.query, max_papers=search.max_papers)
         return result
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

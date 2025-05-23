@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from aurelian.agents.paperqa import (
@@ -13,11 +14,45 @@ from aurelian.agents.paperqa.paperqa_tools import (
     list_papers,
     search_papers,
 )
+from paperqa.settings import IndexSettings
+
 from loguru import logger
 from pydantic_ai import RunContext
 
 AURELIAN_AVAILABLE = True
 logger.info("Aurelian imports enabled")
+
+
+def setup_and_configure_paper_directory(directory):
+    """
+    Setup and configure a paper directory with proper paths.
+
+    Args:
+        directory: Input directory path (can be relative)
+
+    Returns:
+        tuple: (resolved_path, settings, config) tuple with properly configured settings
+    """
+    directory = str(Path(directory).resolve())
+
+    config = get_config()
+    config.paper_directory = directory
+    config.workdir.location = directory
+
+    os.environ["PQA_HOME"] = directory
+
+    if not os.path.exists(directory):
+        logger.info(f"Creating paper directory: {directory}")
+        os.makedirs(directory, exist_ok=True)
+
+    settings = config.set_paperqa_settings()
+    settings.agent.index = IndexSettings(
+        name=config.index_name,
+        paper_directory=directory,
+        recurse_subdirectories=False
+    )
+
+    return directory, settings, config
 
 
 class PaperQAService:
@@ -27,24 +62,26 @@ class PaperQAService:
         """Initialize the PaperQA service with a default config."""
         if not AURELIAN_AVAILABLE:
             raise RuntimeError("Aurelian PaperQA components are not available")
-        self.default_paper_directory = (
-            Path(default_paper_directory) if default_paper_directory else Path.cwd() / "papers"
-        )
-        self.default_paper_directory.mkdir(exist_ok=True)
+            
+        # Use single papers directory for ALL operations
+        default_dir = default_paper_directory if default_paper_directory else str(Path.cwd() / "papers")
         
-        self.config_deps: PaperQADependencies = get_config()
-        self.config_deps.paper_directory = str(self.default_paper_directory)
+        self.papers_dir, self.settings, self.config_deps = setup_and_configure_paper_directory(default_dir)
         logger.info(f"Aurelian PaperQA config: {self.config_deps}")
+        logger.info(f"Papers directory: {self.papers_dir}")
         self.ctx = RunContext(deps=self.config_deps, model=None, usage=None, prompt=None)
 
     def _update_directory(self, paper_directory: str | None):
-        """Update the config directory if different from default."""
-        if paper_directory and paper_directory != str(self.default_paper_directory):
-            target_dir = Path(paper_directory)
-            target_dir.mkdir(exist_ok=True)
-            self.config_deps.paper_directory = str(target_dir)
+        """Update the config directory if specified, otherwise use default."""
+        if paper_directory:
+            target_dir, settings, config_deps = setup_and_configure_paper_directory(paper_directory)
+            self.config_deps = config_deps
+            self.settings = settings
+            # Update the context with new dependencies
+            self.ctx = RunContext(deps=self.config_deps, model=None, usage=None, prompt=None)
+            logger.info(f"Using directory: {target_dir}")
         else:
-            self.config_deps.paper_directory = str(self.default_paper_directory)
+            logger.info(f"Using default directory: {self.papers_dir}")
 
     async def query_papers(self, query: str, paper_directory: str | None = None, **kwargs):
         """Query indexed papers to answer a question."""
